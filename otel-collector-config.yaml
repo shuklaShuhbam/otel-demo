@@ -1,0 +1,48 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  logging:
+      loglevel: info
+  otlp/nr:
+    endpoint: otlp.nr-data.net:4318
+    headers:
+      api-key: <api_key>
+
+  otlp/ss:
+    endpoint: sixthsense-grpc-collector-observability.34.93.197.6.sslip.io:443
+    headers:
+      Authentication: <access_token>
+      teamId: <team_id>
+    compression: none
+    tls:
+      insecure: false
+
+processors:
+  resource:
+    attributes:
+      - key: sixthsense.team.id
+        value: "<team_id>"
+        action: upsert
+
+
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resource]
+      exporters: [otlp/ss,otlp/nr,logging]
+    metrics:
+      receivers: [otlp]
+      processors: [resource]
+      exporters: [otlp/nr]
